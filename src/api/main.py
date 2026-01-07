@@ -130,9 +130,13 @@ async def api_info():
     }
 
 
-# Include routers (will be added as we implement modules)
-# from src.api.routes import data, analysis, ml, ai, reports
-# app.include_router(data.router, prefix="/api/data", tags=["Data"])
+# Include routers
+from src.api.routes import data
+
+app.include_router(data.router, prefix="/api/data", tags=["Data Import"])
+
+# Future routers (will be added as we implement modules)
+# from src.api.routes import analysis, ml, ai, reports
 # app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 # app.include_router(ml.router, prefix="/api/ml", tags=["Machine Learning"])
 # app.include_router(ai.router, prefix="/api/ai", tags=["AI Assistant"])
