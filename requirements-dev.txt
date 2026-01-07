@@ -1,0 +1,83 @@
+# ============================================================
+# Data Copilot Lab - Development Requirements
+# Install: pip install -r requirements-dev.txt
+# ============================================================
+
+# Include base requirements
+-r requirements.txt
+
+# Testing & Coverage
+# ------------------------------------------------------------
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.5.0              # Parallel testing
+pytest-benchmark==4.0.0          # Performance testing
+coverage[toml]==7.4.0
+
+# Code Quality & Linting
+# ------------------------------------------------------------
+black==23.12.1                   # Code formatter
+flake8==7.0.0                    # Linter
+flake8-docstrings==1.7.0
+flake8-bugbear==23.12.2
+mypy==1.8.0                      # Type checker
+isort==5.13.2                    # Import sorter
+pylint==3.0.3
+bandit==1.7.6                    # Security linter
+
+# Pre-commit Hooks
+# ------------------------------------------------------------
+pre-commit==3.6.0
+
+# Documentation
+# ------------------------------------------------------------
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+sphinx-autodoc-typehints==1.25.2
+myst-parser==2.0.0
+
+# Development Tools
+# ------------------------------------------------------------
+ipython==8.20.0
+ipdb==0.13.13                    # Debugger
+watchdog==3.0.0                  # File watcher
+python-dotenv==1.0.0
+
+# Jupyter & Notebooks
+# ------------------------------------------------------------
+jupyter==1.0.0
+notebook==7.0.6
+jupyterlab==4.0.10
+nbconvert==7.14.2
+nbformat==5.9.2
+
+# API Testing
+# ------------------------------------------------------------
+httpx==0.26.0
+requests-mock==1.11.0
+
+# Mock & Fixtures
+# ------------------------------------------------------------
+faker==22.0.0
+factory-boy==3.3.0
+responses==0.24.1
+
+# Performance Profiling
+# ------------------------------------------------------------
+memory-profiler==0.61.0
+py-spy==0.3.14
+scalene==1.5.38
+
+# Database Tools
+# ------------------------------------------------------------
+sqlalchemy-utils==0.41.1
+alembic-utils==0.8.1
+
+# Build & Package
+# ------------------------------------------------------------
+build==1.0.3
+twine==4.0.2
+setuptools==69.0.3
+wheel==0.42.0
