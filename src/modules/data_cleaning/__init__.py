@@ -18,6 +18,15 @@ from src.modules.data_cleaning.outlier_detector import (
     OutlierDetector,
     OutlierMethod,
 )
+from src.modules.data_cleaning.duplicate_remover import (
+    DuplicateRemover,
+    DuplicateStrategy,
+)
+from src.modules.data_cleaning.standardizer import (
+    DataStandardizer,
+    ScalingMethod,
+    EncodingMethod,
+)
 
 __all__ = [
     "DataCleaner",
@@ -29,4 +38,9 @@ __all__ = [
     "OutlierDetector",
     "OutlierMethod",
     "OutlierAction",
+    "DuplicateRemover",
+    "DuplicateStrategy",
+    "DataStandardizer",
+    "ScalingMethod",
+    "EncodingMethod",
 ]
