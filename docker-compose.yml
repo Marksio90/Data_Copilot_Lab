@@ -1,0 +1,202 @@
+version: '3.8'
+
+# ============================================================
+# Data Copilot Lab - Docker Compose Configuration
+# ============================================================
+
+services:
+  # FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/data_copilot_lab
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+
+  # Streamlit Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    env_file:
+      - .env
+    volumes:
+      - ./frontend/streamlit_app:/app/frontend/streamlit_app
+      - ./data:/app/data
+    depends_on:
+      - api
+    command: streamlit run frontend/streamlit_app/app.py --server.port 8501 --server.address 0.0.0.0
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: datacopilot_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=data_copilot_lab
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching and Celery)
+  redis:
+    image: redis:7-alpine
+    container_name: datacopilot_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Celery Worker (for background tasks)
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_celery_worker
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/data_copilot_lab
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - db
+    command: celery -A src.core.celery_app worker --loglevel=info
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+
+  # Celery Beat (for scheduled tasks)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_celery_beat
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - db
+    command: celery -A src.core.celery_app beat --loglevel=info
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+
+  # Flower (Celery monitoring - optional)
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - celery_worker
+    command: celery -A src.core.celery_app flower --port=5555
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+
+  # pgAdmin (Database management - optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: datacopilot_pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@datacopilot.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - datacopilot_network
+    restart: unless-stopped
+    profiles:
+      - tools
+
+# Networks
+networks:
+  datacopilot_network:
+    driver: bridge
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local

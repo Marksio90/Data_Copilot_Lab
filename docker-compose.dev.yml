@@ -1,0 +1,72 @@
+version: '3.8'
+
+# ============================================================
+# Data Copilot Lab - Development Docker Compose
+# Simplified version for local development (SQLite, no Celery)
+# Usage: docker-compose -f docker-compose.dev.yml up
+# ============================================================
+
+services:
+  # FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_api_dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=sqlite:///./data/data_copilot.db
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=True
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - datacopilot_dev_network
+    restart: unless-stopped
+
+  # Streamlit Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: datacopilot_frontend_dev
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    env_file:
+      - .env
+    volumes:
+      - ./frontend/streamlit_app:/app/frontend/streamlit_app
+      - ./data:/app/data
+    depends_on:
+      - api
+    command: streamlit run frontend/streamlit_app/app.py --server.port 8501 --server.address 0.0.0.0
+    networks:
+      - datacopilot_dev_network
+    restart: unless-stopped
+
+  # Redis (minimal for caching)
+  redis:
+    image: redis:7-alpine
+    container_name: datacopilot_redis_dev
+    ports:
+      - "6379:6379"
+    networks:
+      - datacopilot_dev_network
+    restart: unless-stopped
+
+networks:
+  datacopilot_dev_network:
+    driver: bridge
